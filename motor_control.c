@@ -10,6 +10,8 @@ void turn_left(void);
 void straight_fwd(void);
 void turn_right(void);
 void spin_right(void);
+void straight_back(void);
+void spin_wide_left(void);
 
 void motor_control(void)
 {
@@ -65,6 +67,16 @@ void turn_right(void)
 {
   set_motor_speed(left, fast, 0); 
   set_motor_speed(right, stop, 0); 
+}
+void straight_back(void)
+{
+  set_motor_speed(left,rev_fast, 0); 
+  set_motor_speed(right,rev_fast, 0);
+}
+void spin_wide_left(void)
+{
+  set_motor_speed(left, slow, 0); 
+  set_motor_speed(right, fast, 0);
 }
 
 //***************************************************************
