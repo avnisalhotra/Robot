@@ -12,6 +12,7 @@ void turn_right(void);
 void spin_right(void);
 void straight_back(void);
 void spin_wide_left(void);
+void test_program(void);
 
 void motor_control(void)
 {
@@ -78,6 +79,54 @@ void spin_wide_left(void)
   set_motor_speed(left, slow, 0); 
   set_motor_speed(right, fast, 0);
 }
+void test_program(void)
+{
+    int i;
+    while(1)
+    {
+    set_motor_speed(left, fast, 0); 
+  	set_motor_speed(right, fast, 0); 
+    for(i=0; i<244; i++)
+    {
+        _delay(65535);
+    }
+    set_motor_speed(left, medium, 0); 
+  	set_motor_speed(right, medium, 0);
+    for(i=0; i<244; i++)
+    {
+        _delay(65535);
+    }
+    set_motor_speed(left, slow, 0); 
+  	set_motor_speed(right, slow, 0);
+    for(i=0; i<244; i++)
+    {
+        _delay(65535);
+    }
+    set_motor_speed(left, stop, 0); 
+  	set_motor_speed(right, stop, 0);
+    for(i=0; i<244; i++)
+    {
+        _delay(65535);
+    }
+    set_motor_speed(left, rev_slow, 0); 
+  	set_motor_speed(right, rev_slow, 0);
+    for(i=0; i<244; i++)
+    {
+        _delay(65535);
+    }
+    set_motor_speed(left, rev_medium, 0); 
+  	set_motor_speed(right,rev_medium, 0);
+    for(i=0; i<244; i++)
+    {
+        _delay(65535);
+    }
+    set_motor_speed(left, rev_fast, 0); 
+  	set_motor_speed(right, rev_fast, 0);
+    for(i=0; i<244; i++)
+    {
+        _delay(65535);
+    }
+    }
 
 //***************************************************************
 	// ROBOT DANCES		    										*
