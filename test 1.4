@@ -1,0 +1,171 @@
+#include <xc.h>
+#include "../Common/sumovore.h"
+#include "../Common/motor_control.h"
+
+void follow_simple_curves(void);
+void spin_left(void);
+void turn_left(void);
+void slight_left(void);
+void straight_fwd(void);
+void turn_right(void);
+void slight_right(void);
+void spin_right(void);
+void straight_back(void);
+void spin_wide_left(void);
+void test_program(void);
+
+void obtuse_turn(void);
+void cross_whitespace(void);
+void spin_180(void);
+
+
+
+void motor_control(void)
+{
+     // very simple motor control
+    
+     switch(SeeLine.B)
+     {
+         
+        case 0b00100u:
+        case 0b00010u:
+        case 0b01000u:
+        case 0b00001u:
+        case 0b10000u:
+                       //no breaks all above readings end up here
+                       follow_simple_curves();
+                       break;
+                       
+        case 0b00101u:               
+        case 0b10100u:
+        case 0b00110u:   
+        case 0b01100u:   
+                       obtuse_turn();
+                       break;
+        /*case 0b11111u:
+                       motors_brake_all();
+                       break;*/
+        default:       break;
+      } 
+     
+    
+    //test_program();   //cycle wheel speed fast medium slow stop rev_slow rev_medium rev_fast
+    //turn_left();      //dance 1
+    //spin_left();      //dance 2
+    //spin_wide_left(); //dance 3
+    
+}
+
+void follow_simple_curves(void)
+{
+     if ( SeeLine.b.Center ) straight_fwd();
+     else if (SeeLine.b.Left) spin_left();
+     else if (SeeLine.b.CntLeft) turn_left();
+     else if (SeeLine.b.CntRight) turn_right();
+     else if (SeeLine.b.Right) spin_right();
+}
+
+
+void spin_left(void)
+{
+  set_motor_speed(left, rev_fast, 0); 
+  set_motor_speed(right, fast, 0); 
+}
+void turn_left(void)
+{
+  set_motor_speed(left, stop, 0); 
+  set_motor_speed(right, fast, 0); 
+}
+void slight_left(void)
+{
+  set_motor_speed(left, medium, 0); 
+  set_motor_speed(right, fast, 0); 
+}
+void slight_right(void)
+{
+  set_motor_speed(left, fast, 0); 
+  set_motor_speed(right, medium, 0);
+}
+void straight_fwd(void)
+{
+  set_motor_speed(left, fast, -5); 
+  set_motor_speed(right, fast, 0); 
+}
+void spin_right(void)
+{
+  set_motor_speed(left, fast, 0); 
+  set_motor_speed(right, rev_fast, 0); 
+}
+void turn_right(void)
+{
+  set_motor_speed(left, fast, 0); 
+  set_motor_speed(right, stop, 0); 
+}
+void straight_back(void)
+{
+  set_motor_speed(left,rev_fast, 0); 
+  set_motor_speed(right,rev_fast, 0);
+}
+
+void spin_wide_left(void)
+{
+    set_motor_speed(left, slow, 0); 
+  	set_motor_speed(right, fast, 0);
+}
+void test_program(void)
+{
+    int i;
+    while(1)
+    {
+    set_motor_speed(left, fast, 0); 
+  	set_motor_speed(right, fast, 0); 
+    for(i=0; i<244; i++)
+    {
+        _delay(65535);
+    }
+    set_motor_speed(left, medium, 0); 
+  	set_motor_speed(right, medium, 0);
+    for(i=0; i<244; i++)
+    {
+        _delay(65535);
+    }
+    set_motor_speed(left, slow, 0); 
+  	set_motor_speed(right, slow, 0);
+    for(i=0; i<244; i++)
+    {
+        _delay(65535);
+    }
+    set_motor_speed(left, stop, 0); 
+  	set_motor_speed(right, stop, 0);
+    for(i=0; i<244; i++)
+    {
+        _delay(65535);
+    }
+    set_motor_speed(left, rev_slow, 0); 
+  	set_motor_speed(right, rev_slow, 0);
+    for(i=0; i<244; i++)
+    {
+        _delay(65535);
+    }
+    set_motor_speed(left, rev_medium, 0); 
+  	set_motor_speed(right,rev_medium, 0);
+    for(i=0; i<244; i++)
+    {
+        _delay(65535);
+    }
+    set_motor_speed(left, rev_fast, 0); 
+  	set_motor_speed(right, rev_fast, 0);
+    for(i=0; i<244; i++)
+    {
+        _delay(65535);
+    }
+    }
+}
+
+void obtuse_turn(void)
+{
+    if ( SeeLine.b.Center && (SeeLine.b.Left || SeeLine.b.Right)) straight_fwd(); //distraction
+    else if(SeeLine.b.CntLeft && SeeLine.b.Center) slight_left();
+    else if(SeeLine.b.CntRight && SeeLine.b.Center) slight_right();
+}
+
