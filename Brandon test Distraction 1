@@ -1,0 +1,19 @@
+//Sharp turns (>90 deg)
+		case 0b11100: // sensor 1, 2, 3 are lit up 
+		case 0b00111: // sensor 3,4,5 are lit up 
+		case 0b11000: // sensor 1 and 2 are lit up 
+		case 0b00011: // sensor 4 and 5 are lit up 
+			//no breaks all above readings end up here
+			follow_corners();		//call function for corners
+		break;
+	
+		case 0b01100: //sensor 1 and 3 are lit up CHANGED
+		case 0b00110: // sensor 3 and 5 are lit up CHANGED
+			follow_sharp_corners();		//call function for corners
+		break;
+
+		//Ignore distractions
+		case 0b10100: //sensor 1 and 3 are lit up
+		case 0b00101: // sensor 3 and 5 are lit up
+		straight_fwd();
+    break;
