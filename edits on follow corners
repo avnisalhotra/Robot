@@ -1,0 +1,21 @@
+//Sharp turns (>=90 deg)
+		case 0b11100u: // sensor 1, 2, 3 are lit up 
+		case 0b00111u: // sensor 3,4,5 are lit up 
+		case 0b01100u: // sensor 2 and 3 are lit up 
+		case 0b00110u: // sensor 3 and 4 are lit up 
+			//no breaks all above readings end up here
+			follow_corners();		//call function for corners
+		break;
+    
+   
+//For following turns of 90 degrees or greater
+void follow_corners(void)
+{
+	//Hitting perpendicular
+	if 		(SeeLine.b.Center && SeeLine.b.Left && SeeLine.b.CntLeft) sharp_left();
+	else if (SeeLine.b.Center && SeeLine.b.Right && SeeLine.b.CntRight) sharp_right();
+	//Hitting on a slight angle
+	else if (SeeLine.b.Center && SeeLine.b.CntLeft) slow_left();				
+	else if (SeeLine.b.Center && SeeLine.b.CntRight) slow_right();
+}
+    
