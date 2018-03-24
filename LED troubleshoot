@@ -1,0 +1,14 @@
+// determine and display code for cause of MCU reset. 
+// LED
+// 3  4  5
+// 0  0  0  Power on Reset  <POR>       This is the normal result of of flicking toggling the power switch
+// 0  0  1  Brown Out Reset   <BOR>     PIC detected a voltage below about 4.6 volts that did not return above 4.6 volts for more than 200 micro seconds
+// 0  1  0  Low Voltage Detect   <LVD>  PIC detected a voltage below 4.59 volts (actually not a reset but an interrupt)
+// 0  1  1  <not defined> should not get this
+// 1  0  0  WatchDog Timer reset  <WDT> These resets have been disabled 
+//                                              in the #pragma config WDT = OFF directive (near top of this file) 
+//                                              this code should not occure unless OFF is changed back to ON
+// 1  0  1  Stack Overflow   <SCKFUL>   This is usually an indication of unitended recursion (program bug)
+// 1  1  1  RESET task <reset>  (say a software reset -- this one has not been tested)
+//
+// LED 1 and 2 flash alternetly
