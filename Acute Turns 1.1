@@ -1,0 +1,43 @@
+void follow_sharp_corners(void)
+{
+    while(SeeLine.B != 0b00000  && SeeLine.B != 0b00011)
+	{
+		straight_fwd();
+
+		//Check for line
+		check_sensors();    // from sumovore.c
+    	set_leds();         // function from sumovore.c
+        if (SeeLine.B == 0b00101u)
+        {
+            turn_right();
+            if (SeeLine.B == 0b00100u)
+            {
+                straight_fwd();
+            }
+            else if (SeeLine.B == 0b11100u || SeeLine.B == 0b01100u)
+            {
+                turn_left();
+            }
+            if (SeeLine.B == 0b00100u)
+            {
+                straight_fwd();  
+            }
+        }
+        if (SeeLine.B == 0b10100u)
+        {
+            turn_left();
+            if (SeeLine.B == 0b00100u)
+            {
+                straight_fwd();
+            }
+            else if (SeeLine.B == 0b00111u || SeeLine.B == 0b00110u)
+            {
+                turn_right();
+            }
+            if (SeeLine.B == 0b00100u)
+            {
+                straight_fwd();  
+            }
+        }  
+	}
+}
