@@ -1,0 +1,25 @@
+void slow_left(void);
+void slow_right(void);
+void medium_left(void);
+void medium_right(void);
+
+void slow_left(void)
+{
+    set_motor_speed(left, slow, 0); 
+  	set_motor_speed(right, fast, 0); 
+}
+void slow_right(void)
+{
+    set_motor_speed(left, fast, 0); 
+  	set_motor_speed(right, slow, 0); 
+}
+void medium_left(void)
+{
+    set_motor_speed(left, medium, 0); 
+  	set_motor_speed(right, fast, 0); 
+}
+void medium_right(void)
+{
+    set_motor_speed(left, fast, 0); 
+  	set_motor_speed(right, medium, 0); 
+}
