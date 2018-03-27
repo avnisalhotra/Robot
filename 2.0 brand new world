@@ -1,0 +1,653 @@
+#include "sumovore.h"
+#include "motor_control.h"
+#include <xc.h>
+
+void follow_simple_curves(void);
+void spin_left(void);
+void spin_left_slow(void);
+void turn_left(void);
+void turn_left_slow(void);
+void turn_left_90(void);
+void straight_fwd(void);
+void turn_right(void);
+void turn_right_90(void);
+void spin_right(void);
+void spin_right_slow(void);
+void find_track(void);
+void reverse(void);
+
+
+void motor_control(void)
+{
+    
+    //sets variables used in the for loops in the cases
+    int j = 0;
+    int i = 0;
+    
+    //sets timer used in the cases
+    OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_256);
+    
+    //switch function changes according to what the robot detects (in binary)
+    //SeeLine.B is the binary for what the robot detects.
+     switch(SeeLine.B)
+     {
+        //Case for when the robot detects center. On a track, this would 
+        //generally be a straight line, where the robot would execute the
+        //straight_fwd() function. 
+        case 0b00100u:
+            straight_fwd();
+            break;
+        
+        //This case is for when the robot is following a right curve, and also 
+        //for correcting itself when the robot starts veering off to the left
+        //when it is on a straight line.
+        case 0b00010u:
+            spin_right_slow();
+            break;
+       
+        //This case is also for when the robot is following a right curve.
+        case 0b00110u:
+            turn_right();
+            break;
+       
+        //This case is for when the robot is following a left curve, and also 
+        //for correcting itself when the robot starts veering off to the right
+        //when it is on a straight line.
+        case 0b01000u:
+            spin_left_slow();
+            break;
+       
+        //This case is also for when the robot is following a left curve.    
+        case 0b01100u:
+            turn_left();
+            break;
+           
+        //This case is a last resort case where the robot is either veering off 
+        //too much to the left or simply following a right curve.
+        case 0b00001u:
+            spin_right();
+            break;
+            
+        //This case is a last resort case where the robot is either veering off 
+        //too much to the right or simply following a left curve.
+         case 0b10000u:
+            spin_left();
+            break;
+          
+        //The next two cases are for the small angle left turns
+        case 0b10100u:
+            //These delays were placed here because for some right angle turns
+            //the robot would somehow detect the same binary code. Once this
+            //combination is detected, first continues for 200000 tcy and
+            //if it is still the this combination after the delay (if it was
+            //a right angle turn it would change), the if statement below is 
+            //executed.
+            _delay(100000ul);
+            _delay(100000ul);
+            
+            if (SeeLine.B == 0b10100u)
+            {     
+               i = 0; //sets variable
+               
+               //For loop begins if the combination is still the same after the
+               //200000tcy delay. First, This loop makes the robot go straight
+               //for one second unless one of the if statement conditions
+               //are satisfied, where it would cut the for loop short.
+               for(i=0; i<=320; i++) 
+               {                
+                 straight_fwd();
+                 _delay(25000ul); 
+                 check_sensors(); //checks sensors every loop
+                 
+                 //If one of these conditions are detected, the for loop cuts short.
+                if (SeeLine.B == 0b00000u || SeeLine.b.CntRight || SeeLine.b.Right)
+                 {
+                     i = 320; check_sensors();
+                 }
+               }
+               
+               check_sensors();
+               
+               //After the for loop is cut short and the robot detects white space
+               //this if statement executes. This is for the actually turns,
+               //as the robot would detect white space shortly after detecting the 
+               //code in the case statement. In a crossover or if there are
+               //nearby trails, this if statement would not execute because
+               //the robot would detect a line somewhere.
+               if (SeeLine.B == 0b00000u)
+               {
+                 j = 0;
+                 //This for loop allows the robot to spin for half a second.
+                 //There is an if statement in the loop where if the robot
+                 //detects a center line, the loop is cut short as it marks
+                 //the end of the turn.
+                 for(j=0; j<=160; j++) 
+                 {   
+                    spin_left();
+                    _delay(25000ul); 
+                    check_sensors();
+                    //This if statement cuts the loops short.
+                    if (SeeLine.b.Center)
+                    {
+                      j = 160; check_sensors();
+                    }
+                  }  
+               }  
+            }
+            break;         
+         
+        //Similar to when SeeLine.B is 0b10100u.    
+        case 0b10010u:
+            i = 0;
+            for(i=0; i<=320; i++) 
+            {
+              straight_fwd();
+              _delay(25000ul);  
+              check_sensors();
+              if (SeeLine.B == 0b00000u || SeeLine.b.Right )
+              {
+                  i = 320; check_sensors();
+              }            
+            }
+               
+            check_sensors();
+            if (SeeLine.B == 0b00000u)
+            {
+                j = 0;
+                for(j=0; j<=160; j++) 
+                {   
+                    spin_left();
+                    _delay(25000ul);  
+                    check_sensors();
+                    if (SeeLine.b.Center)
+                    {
+                     j = 160; check_sensors();
+                    }
+                }  
+            }           
+            break;
+        
+        //The next two case statements are for small angle right turns
+        case 0b01001u:
+            
+            //These delays were placed here because for some right angle turns
+            //the robot would somehow detect the same binary code. Once this
+            //combination is detected, first continues for 200000 tcy and
+            //if it is still the this combination after the delay (if it was
+            //a right angle turn it would change), the if statement below is 
+            //executed.
+            _delay(100000ul);
+            _delay(100000ul);
+            
+            i = 0; //sets variable
+               
+            //For loop begins if the combination is still the same after the
+            //200000tcy delay. First, This loop makes the robot go straight
+            //for one second unless one of the if statement conditions
+            //are satisfied, where it would cut the for loop short.
+            for(i=0; i<=320; i++) 
+            {
+               straight_fwd();
+               _delay(25000ul);  
+               check_sensors();//checks sensors every loop
+                 
+               //If one of these conditions are detected, the for loop cuts short.
+               if (SeeLine.B == 0b00000u || SeeLine.b.Left)
+               {
+                  i = 320; check_sensors();
+               }
+             }
+             
+            check_sensors();
+            
+            //After the for loop is cut short and the robot detects white space
+            //this if statement executes. This is for the actually turns,
+            //as the robot would detect white space shortly after detecting the 
+            //code in the case statement. In a crossover or if there are
+            //nearby trails, this if statement would not execute because
+            //the robot would detect a line somewhere.
+            if (SeeLine.B == 0b00000u)
+            {
+                j = 0;
+                 //This for loop allows the robot to spin for half a second.
+                 //There is an if statement in the loop where if the robot
+                 //detects a center line, the loop is cut short as it marks
+                 //the end of the turn.
+                for(j=0; j<=160; j++) 
+                {   
+                    spin_right();
+                    _delay(25000ul);  
+                    check_sensors();
+                    //This if statement cuts the loops short.
+                    if (SeeLine.b.Center)
+                    {
+                      j = 160; check_sensors();
+                    }
+                }  
+            }
+
+            break;
+         
+        //Similar to when SeeLine.B is 0b01001u.    
+        case 0b00101u:
+             
+            i = 0;
+            for(i=0; i<=320; i++) 
+            {
+                straight_fwd();
+                _delay(25000ul); 
+                check_sensors();
+                if (SeeLine.B == 0b00000u || SeeLine.b.CntLeft || SeeLine.b.Left)
+                {
+                    i = 320; check_sensors();
+                }
+            }
+            
+            check_sensors();
+            if (SeeLine.B == 0b00000u)
+            {
+                j = 0;
+                for(j=0; j<=160; j++) 
+                {   
+                    spin_right();
+                   _delay(25000ul); 
+                    check_sensors();
+                    if (SeeLine.b.Center)
+                    {
+                      j = 160; check_sensors();
+                    }
+                }  
+            }
+
+            break;
+        
+        //The next 6 cases are for right angle turns.
+        case 0b11110u:
+             
+            i = 0;
+            
+            //Once this case is called, this for loop starts. This for loop
+            //lasts for 0.15 seconds. The turn only executes when during
+            //this loop, white space is detected; sometimes, in right angle
+            //crossovers, this combination is detected, but afterwards, there 
+            //is a straight line. 
+            for(i=0; i<=6; i++) 
+            {
+                straight_fwd();
+                _delay(100000ul);  
+                //ends for loop early if white space is detected
+                if (SeeLine.B == 0b00000u)
+                {
+                    i = 6; check_sensors();
+                }
+            }      
+            
+            check_sensors();
+            
+            //This if statement executes when whitespace is detected.
+            if (SeeLine.B == 0b00000u)
+            {
+                j = 0;
+                //This for loop allows the robot to turn until the if statement
+                //inside is satisfied, which cuts the for loop short.
+                for(j=0; j<=20; j++) 
+                {   
+                   turn_left_90();
+                   _delay(100000ul);  
+                   check_sensors();
+                   //This cuts the or loop short when the center lien is detected
+                   //which is the ideal position for the robot to start going
+                   //straight; i.e. the end of the turn.
+                   if (SeeLine.b.Center)
+                   {
+                     j = 35; check_sensors();
+                   }
+                }  
+            }
+           
+            break;
+
+        case 0b11100u:
+            i = 0;
+            for(i=0; i<=3; i++) 
+            {
+               straight_fwd();
+               _delay(100000ul);  
+               if (SeeLine.B == 0b00000u)
+                {
+                   i = 3; check_sensors();
+                }
+               
+            }      
+             
+            check_sensors();
+            if (SeeLine.B == 0b00000u)
+            {
+                j = 0;
+                for(j=0; j<=35; j++) 
+                {   
+                    turn_left_90();
+                    _delay(100000ul);  
+                    check_sensors();
+                    if (SeeLine.b.Center)
+                    {
+                      j = 35; check_sensors();
+                    }
+                }  
+            }
+             
+            break;
+            
+        case 0b11000u:
+            i = 0;
+            for(i=0; i<=12; i++) 
+            {
+                straight_fwd();
+                _delay(100000ul);  
+                if (SeeLine.B == 0b00000u)
+                {
+                    i = 12; check_sensors();
+                }
+            }      
+            
+            check_sensors();
+            if (SeeLine.B == 0b00000u)
+            {
+                j = 0;
+                for(j=0; j<=35; j++) 
+                {   
+                    turn_left_90();
+                    _delay(100000ul);  
+                    check_sensors();
+                    if (SeeLine.b.Center)
+                    {
+                      j =35; check_sensors();
+                    }
+                }  
+            }
+            
+            break;
+            
+        case 0b01111u:
+            i = 0;
+            for(i=0; i<=6; i++) 
+            {
+                straight_fwd();
+                _delay(100000ul);  
+                if (SeeLine.B == 0b00000u)
+                {
+                    i = 6; check_sensors();
+                }
+            }      
+            
+            check_sensors();
+            if (SeeLine.B == 0b00000u)
+            {
+                j = 0;
+                for(j=0; j<=20; j++) 
+                {   
+                    turn_right_90();
+                    _delay(100000ul);  
+                    check_sensors();
+                    if (SeeLine.b.Center)
+                    {
+                      j =35; check_sensors();
+                    }
+                }  
+            }
+            break;
+
+        
+        case 0b00111u:
+            i = 0;
+            for(i=0; i<=3; i++) 
+            {
+                straight_fwd();
+                _delay(100000ul); 
+                if (SeeLine.B == 0b00000u)
+                {
+                    i = 3; check_sensors();
+                }
+            
+            }      
+            
+            check_sensors();
+            if (SeeLine.B == 0b00000u)
+            {
+                j = 0;
+                for(j=0; j<=35; j++) 
+                {   
+                    turn_right_90();
+                    _delay(100000ul);  
+                    check_sensors();
+                    if (SeeLine.b.Center)
+                    {
+                       j = 35; check_sensors();
+                    }
+                }
+            }
+            
+            break;
+            
+        case 0b00011u:        
+            i = 0;
+            for(i=0; i<=12; i++) 
+            {
+               straight_fwd();
+               _delay(100000ul); 
+               if (SeeLine.B == 0b00000u)
+               {
+                    i = 12; check_sensors();
+               }
+               
+            }      
+            
+            check_sensors();
+            if (SeeLine.B == 0b00000u)
+            {
+                j = 0;
+                for(j=0; j<=35; j++) 
+                {   
+                    turn_right_90();
+                    _delay(100000ul); 
+                    check_sensors();
+                    if (SeeLine.b.Center)
+                    {
+                      j =35; check_sensors();
+                    }
+                }  
+                
+            }
+            
+            break;
+        
+        //This case is for the end landing pad/ right angle crossovers.
+        case 0b11111u:            
+            
+            
+            for (int i = 0; i++; i = 100)
+            { 
+                 straight_fwd();
+                 _delay(100000ul);
+                 check_sensors();
+            }
+            
+            motors_brake_all();
+            break;
+            
+        case 0b00000u:
+            find_track();
+            break;
+            
+        default:       
+            break; 
+                  
+        
+      } 
+}
+
+void follow_simple_curves(void)
+{
+     if ( SeeLine.b.Center ) straight_fwd();
+     else if (SeeLine.b.Left) spin_left();
+     else if (SeeLine.b.CntLeft) turn_left();
+     else if (SeeLine.b.CntRight) turn_right();
+     else if (SeeLine.b.Right) spin_right();
+}
+
+//Below are all the certain robot directional functions which are called in
+//the case statements above. In each function, there are specific combinations
+//of parameters in set_motor_speed() which are unique to that function.
+
+void reverse(void)
+{
+  set_motor_speed(left, rev_slow, 5); 
+  set_motor_speed(right, rev_slow,8);    
+}
+
+void spin_left(void)
+{
+  set_motor_speed(left, rev_medium, 5); 
+  set_motor_speed(right, medium, 8); 
+}
+
+void spin_left_slow(void)
+{
+  set_motor_speed(left, rev_slow, 5); 
+  set_motor_speed(right, slow, 8); 
+}
+
+void turn_left(void)
+{
+  set_motor_speed(left, slow, 5); 
+  set_motor_speed(right, medium, 8);  
+}
+
+void turn_left_slow(void)
+{
+    set_motor_speed(left, stop, 5);
+    set_motor_speed(right, slow, 8);
+}
+
+void turn_left_90(void)
+{
+  set_motor_speed(left, rev_slow, 5); 
+  set_motor_speed(right, slow, 8);  
+}
+
+void straight_fwd(void)
+{
+  set_motor_speed(left, slow, 5); 
+  set_motor_speed(right, slow, 8);     
+}
+
+void spin_right(void)
+{
+  set_motor_speed(left, medium, 5); 
+  set_motor_speed(right, rev_medium, 8);  
+}
+
+void spin_right_slow(void)
+{
+   set_motor_speed(left, slow, 5); 
+   set_motor_speed(right, rev_slow, 8); 
+}
+
+void turn_right(void)
+{
+  set_motor_speed(left, medium, 5); 
+  set_motor_speed(right, slow, 8);  
+}
+
+void turn_right_90(void)
+{
+  set_motor_speed(left, slow, 5); 
+  set_motor_speed(right, rev_slow, 8); 
+}
+
+//This function is for when the robot goes to a dead end, or any kind of gap.
+
+void find_track(void)
+{
+     int k = 0;
+     //This for loop allows the robot to go forward for 0.5 seconds. The if
+     //statement cuts the loop short if a line is detected, as this is a 
+     //sign for a gap.
+     for(k=0; k<=40; k++) 
+     {
+           straight_fwd();
+           _delay(100000ul); 
+           check_sensors();
+           if (SeeLine.b.Center || SeeLine.b.CntLeft || SeeLine.b.CntRight 
+                                || SeeLine.b.Left || SeeLine.b.Right )
+           {
+                k = 40;                
+           }
+     }
+      
+     check_sensors();
+     
+     //executes for an angled right turn gap.
+     if(SeeLine.B == 0b10000u || SeeLine.B == 0b11000u) 
+     {
+            int i=0; 
+            for(i=0; i<=3; i++)
+            {
+                straight_fwd();
+                _delay(100000ul);
+            }
+            spin_right();
+     }
+        
+      //executes for an angled left turn gap.
+     if(SeeLine.B == 0b00001u || SeeLine.B == 0b00011u) 
+     {
+            int i=0; 
+            for(i=0; i<=3; i++)
+            {
+                straight_fwd();
+                _delay(100000ul);
+            }
+            spin_left();
+     }
+        
+     //If after the for loop in the beginning fully finishes and the robot still
+     //detects whitespace, it is a sign for a dead end. Inside the if statement
+     //below, the robot is instructed to reverse until any line is detected.
+     //Afterwards, the robot is instructed to spin left slowly until a line is 
+     //detected again. After this, the robot exits this function and continues
+     //to follow the case statements.
+     if(SeeLine.B == 0b00000u) 
+     {
+        do 
+        {
+            reverse();
+            check_sensors();
+        }
+        while(!SeeLine.b.Center && !SeeLine.b.CntLeft && !SeeLine.b.CntRight 
+                    && !SeeLine.b.Left && !SeeLine.b.Right );
+            
+            
+            int k =0;
+            for(k=0; k<=50; k++)
+            {
+                straight_fwd();
+                _delay(100000ul);
+                check_sensors();
+            }
+            
+            TMR0IF = 0;
+            WriteTimer0(43000u);
+            while(!TMR0IF)
+            {
+                spin_left_slow(); 
+                check_sensors();                
+            }
+            
+        }
+
+}
+
+
+
+        
