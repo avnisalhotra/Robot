@@ -182,7 +182,7 @@ void medium_right(void)
 
 void sharp_angle_left(void) // for left turns <90 degrees
 {
-	while(SeeLine.B != 0b00000u  && SeeLine.B != 0b00101u && SeeLine.B != 0b00100u)
+	while(SeeLine.B != 0b00000u  && SeeLine.B != 0b00101u && SeeLine.B != 0b00100u && SeeLine.B != 0b00110u)
 	{
 		straight_fwd();
 
@@ -201,7 +201,7 @@ void sharp_angle_left(void) // for left turns <90 degrees
 }
 void sharp_angle_right(void)    // for right turns <90 degress
 {
-	while(SeeLine.B != 0b00000 && SeeLine.B != 0b10100 && SeeLine.B != 0b00100)
+	while(SeeLine.B != 0b00000u && SeeLine.B != 0b10100u && SeeLine.B != 0b00100u && SeeLine.B != 0b01100u)
 	{
 		straight_fwd();
 		//Check for line
