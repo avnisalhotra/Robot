@@ -1,0 +1,24 @@
+void landing_pad(void)
+{
+    OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_256);
+    TMR0IF = 0;
+    
+    if(SeeLine.B == 0b11111u)
+     {
+            WriteTimer0(28035u);
+            while(!TMR0IF)
+            {
+                straight_fwd
+                check_sensors(); 
+            } 
+            check_sensors();
+            if(SeeLine.B != 0b11111u) 
+            {
+                do
+                {
+                  reverse();
+                  check_sensors();  
+                }
+            }    
+     }
+}
