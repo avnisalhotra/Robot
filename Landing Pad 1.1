@@ -5,7 +5,7 @@ void landing_pad(void)
     
     if(SeeLine.B == 0b11111u)
      {
-            WriteTimer0(28035u);
+            WriteTimer0(7724u);
             while(!TMR0IF)
             {
                 straight_fwd
@@ -14,11 +14,13 @@ void landing_pad(void)
             check_sensors();
             if(SeeLine.B != 0b11111u) 
             {
-                do
-                {
                   reverse();
-                  check_sensors();  
-                }
+                  if(SeeLine.B == 0b11111u)
+                  {
+                      motors_brake_all();
+                      check_sensors();
+                  }
+                                   
             }    
      }
 }
