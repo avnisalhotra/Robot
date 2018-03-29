@@ -15,6 +15,7 @@ void spin_right(void);
 void spin_right_slow(void);
 void find_track(void);
 void reverse(void);
+void landing_pad(void);
 
 
 void motor_control(void)
