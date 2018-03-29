@@ -1,0 +1,128 @@
+#include "sumovore.h"
+#include "motor_control.h"
+#include <xc.h>
+
+void follow_simple_curves(void);
+void spin_left(void);
+void spin_left_slow(void);
+void turn_left(void);
+void turn_left_slow(void);
+void turn_left_90(void);
+void straight_fwd(void);
+void turn_right(void);
+void turn_right_90(void);
+void spin_right(void);
+void spin_right_slow(void);
+void find_track(void);
+void reverse(void);
+
+
+void motor_control(void)
+{
+    
+    //sets variables used in the for loops in the cases
+    int j = 0;
+    int i = 0;
+    
+    //sets timer used in the cases
+    OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_256);
+    
+    //switch function changes according to what the robot detects (in binary)
+    //SeeLine.B is the binary for what the robot detects.
+     switch(SeeLine.B)
+     {
+        //Case for when the robot detects center. On a track, this would 
+        //generally be a straight line, where the robot would execute the
+        //straight_fwd() function. 
+        case 0b00100u:
+        //This case is for when the robot is following a right curve, and also 
+        //for correcting itself when the robot starts veering off to the left
+        //when it is on a straight line.
+        case 0b00010u:    
+        //This case is also for when the robot is following a right curve.
+        case 0b00110u:      
+        //This case is for when the robot is following a left curve, and also 
+        //for correcting itself when the robot starts veering off to the right
+        //when it is on a straight line.
+        case 0b01000u:      
+        //This case is also for when the robot is following a left curve.    
+        case 0b01100u:
+        //This case is a last resort case where the robot is either veering off 
+        //too much to the left or simply following a right curve.
+        case 0b00001u:
+        //This case is a last resort case where the robot is either veering off 
+        //too much to the right or simply following a left curve.
+         case 0b10000u:
+                        follow_simple_curves();
+                        break;
+          
+void follow_simple_curves(void)        
+{
+     if ( SeeLine.b.Center ) straight_fwd();
+     else if (SeeLine.b.Left) spin_left();
+     else if (SeeLine.b.CntLeft) spin_left_slow();
+     else if (SeeLine.b.CntRight) spin_right_slow();
+     else if (SeeLine.b.Right) spin_right();
+     else if (SeeLine.b.CntRight && SeeLine.b.Center) turn_right();
+     else if (SeeLine.b.CntLeft && SeeLine.b.Center) turn_left();
+}
+
+//Below are all the certain robot directional functions which are called in
+//the case statements above. In each function, there are specific combinations
+//of parameters in set_motor_speed() which are unique to that function.
+
+void reverse(void)
+{
+  set_motor_speed(left, rev_slow, 5); 
+  set_motor_speed(right, rev_slow,8);    
+}
+void spin_left(void)
+{
+  set_motor_speed(left, rev_medium, 5); 
+  set_motor_speed(right, medium, 8); 
+}
+void spin_left_slow(void)
+{
+  set_motor_speed(left, rev_slow, 5); 
+  set_motor_speed(right, slow, 8); 
+}
+void turn_left(void)
+{
+  set_motor_speed(left, slow, 5); 
+  set_motor_speed(right, medium, 8);  
+}
+void turn_left_slow(void)
+{
+    set_motor_speed(left, stop, 5);
+    set_motor_speed(right, slow, 8);
+}
+void turn_left_90(void)
+{
+  set_motor_speed(left, rev_slow, 5); 
+  set_motor_speed(right, slow, 8);  
+}
+void straight_fwd(void)
+{
+  set_motor_speed(left, slow, 5); 
+  set_motor_speed(right, slow, 8);     
+}
+void spin_right(void)
+{
+  set_motor_speed(left, medium, 5); 
+  set_motor_speed(right, rev_medium, 8);  
+}
+void spin_right_slow(void)
+{
+   set_motor_speed(left, slow, 5); 
+   set_motor_speed(right, rev_slow, 8); 
+}
+void turn_right(void)
+{
+  set_motor_speed(left, medium, 5); 
+  set_motor_speed(right, slow, 8);  
+}
+void turn_right_90(void)
+{
+  set_motor_speed(left, slow, 5); 
+  set_motor_speed(right, rev_slow, 8); 
+}
