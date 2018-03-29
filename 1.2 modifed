@@ -15,7 +15,6 @@ void spin_right(void);
 void spin_right_slow(void);
 void find_track(void);
 void reverse(void);
-void landing_pad(void);
 
 
 void motor_control(void)
@@ -54,8 +53,9 @@ void motor_control(void)
         //This case is a last resort case where the robot is either veering off 
         //too much to the right or simply following a left curve.
          case 0b10000u:
-                        follow_simple_curves();
-                        break;
+                        follow_simple_curves();       //combined simple curves with new speeds from 2.0.
+                        break;                        
+ //NOTE: be aware what binary that simple curves now take, so later inputs should be different. 
           
 void follow_simple_curves(void)        
 {
@@ -126,30 +126,4 @@ void turn_right_90(void)
 {
   set_motor_speed(left, slow, 5); 
   set_motor_speed(right, rev_slow, 8); 
-}
-
-void landing_pad(void)
-{
-    OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_256);
-    TMR0IF = 0;
-    
-    if(SeeLine.B == 0b11111u)
-     {
-            WriteTimer0(7724u);
-            while(!TMR0IF)
-            {
-                straight_fwd
-                check_sensors(); 
-            } 
-            check_sensors();
-            if(SeeLine.B != 0b11111u) 
-            {
-                  reverse();
-                  if(SeeLine.B == 0b11111u)
-                  {
-                      motors_brake_all();
-                      check_sensors();
-                  }                 
-            }    
-     }
 }
