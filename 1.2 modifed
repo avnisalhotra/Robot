@@ -16,6 +16,7 @@ void spin_right_slow(void);
 void find_track(void);
 void reverse(void);
 void landing_pad(void);
+void cross_whitespace(void)
 
 void motor_control(void)
 {
@@ -126,6 +127,34 @@ void turn_right_90(void)
 {
   set_motor_speed(left, slow, 5); 
   set_motor_speed(right, rev_slow, 8); 
+}
+void cross_whitespace(void)
+{
+	unsigned int wait_TCY = 31250;	//Amount of TCY to wait for timer0
+	//Open timer with 16 bit and a 128 PS
+	OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_128);
+			
+	//If whitespace, then travel forward for 0.5 seconds
+	straight_fwd();
+	WriteTimer0(0);						//start timer
+  	while( ReadTimer0() < wait_TCY && SeeLine.B == 0b00000u)
+  	{
+  		//0.5x10^9 ns / 125ns = 4,000,000 TCY = 128*31250 TCY = 0.5 seconds
+		//Check for line
+		check_sensors();    // from sumovore.c
+        set_leds();         // function from sumovore.c
+
+		//If a line is found, close timer and exit while loop		 
+ 	}
+
+	CloseTimer0(); 
+			
+	//If no line is found after 0.5 sec, turn around and head back
+	if(SeeLine.B == 0b00000u)
+	{
+		spin_180();
+		straight_fwd();
+	}	
 }
 
 void landing_pad(void)
