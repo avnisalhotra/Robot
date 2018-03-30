@@ -1,38 +1,36 @@
-#include "sumovore.h"
-#include "motor_control.h"
+#include "../Common/sumovore.h"
+#include "../Common/motor_control.h"
 #include <xc.h>
 
 void follow_simple_curves(void);
-void spin_left(void);
+void spin_left(void);// 
+void turn_left(void);//
+void straight_fwd(void);// this needs balancing
+void turn_right(void);
+void spin_right(void);
+void cross_whitespace(void); // this works 
 void spin_left_slow(void);
-void turn_left(void);
 void turn_left_slow(void);
 void turn_left_90(void);
-void straight_fwd(void);
-void turn_right(void);
 void turn_right_90(void);
-void spin_right(void);
 void spin_right_slow(void);
 void find_track(void);
 void reverse(void);
 void landing_pad(void);
-void cross_whitespace(void)
+void cross_whitespace(void);
 
 void motor_control(void)
-{
-    
+{	
     //sets variables used in the for loops in the cases
     int j = 0;
     int i = 0;
+	// very simple motor control
     
     //sets timer used in the cases
     OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_256);
-    
-    //switch function changes according to what the robot detects (in binary)
-    //SeeLine.B is the binary for what the robot detects.
-     switch(SeeLine.B)
-     {
-        //Case for when the robot detects center. On a track, this would 
+  	switch(SeeLine.B)
+   	{
+		 //Case for when the robot detects center. On a track, this would 
         //generally be a straight line, where the robot would execute the
         //straight_fwd() function. 
         case 0b00100u:
@@ -56,8 +54,24 @@ void motor_control(void)
          case 0b10000u:
                         follow_simple_curves();       //combined simple curves with new speeds from 2.0.
                         break;                        
- //NOTE: be aware what binary that simple curves now take, so later inputs should be different. 
-          
+ //NOTE: be aware what binary that simple curves now take, so later inputs should be different
+
+		default: break;
+  	} 
+
+	//***************************************************************
+	// ROBOT DANCES		    										*
+	//***************************************************************
+	//turn_left();		//Spin around one wheel
+
+	//spin_left();		//Spin at one place
+
+	//set_motor_speed(left, slow, 0); 
+  	//set_motor_speed(right, fast, 0);	//Spin in larger circles
+	//***************************************************************
+}
+
+//For following straight lines and slow curves
 void follow_simple_curves(void)        
 {
      if ( SeeLine.b.Center ) straight_fwd();
@@ -69,9 +83,6 @@ void follow_simple_curves(void)
      else if (SeeLine.b.CntLeft && SeeLine.b.Center) turn_left();
 }
 
-//Below are all the certain robot directional functions which are called in
-//the case statements above. In each function, there are specific combinations
-//of parameters in set_motor_speed() which are unique to that function.
 
 void reverse(void)
 {
@@ -127,58 +138,4 @@ void turn_right_90(void)
 {
   set_motor_speed(left, slow, 5); 
   set_motor_speed(right, rev_slow, 8); 
-}
-void cross_whitespace(void)
-{
-	unsigned int wait_TCY = 31250;	//Amount of TCY to wait for timer0
-	//Open timer with 16 bit and a 128 PS
-	OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_128);
-			
-	//If whitespace, then travel forward for 0.5 seconds
-	straight_fwd();
-	WriteTimer0(0);						//start timer
-  	while( ReadTimer0() < wait_TCY && SeeLine.B == 0b00000u)
-  	{
-  		//0.5x10^9 ns / 125ns = 4,000,000 TCY = 128*31250 TCY = 0.5 seconds
-		//Check for line
-		check_sensors();    // from sumovore.c
-        set_leds();         // function from sumovore.c
-
-		//If a line is found, close timer and exit while loop		 
- 	}
-
-	CloseTimer0(); 
-			
-	//If no line is found after 0.5 sec, turn around and head back
-	if(SeeLine.B == 0b00000u)
-	{
-		spin_180();
-		straight_fwd();
-	}	
-}
-
-void landing_pad(void)
-{
-    OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_256);
-    TMR0IF = 0;
-    
-    if(SeeLine.B == 0b11111u)
-     {
-            WriteTimer0(7724u);
-            while(!TMR0IF)
-            {
-                straight_fwd
-                check_sensors(); 
-            } 
-            check_sensors();
-            if(SeeLine.B != 0b11111u) 
-            {
-                  reverse();
-                  if(SeeLine.B == 0b11111u)
-                  {
-                      motors_brake_all();
-                      check_sensors();
-                  }                 
-            }    
-     }
 }
