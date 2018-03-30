@@ -13,6 +13,7 @@ void spin_left_slow(void);
 void turn_left_slow(void);
 void turn_left_90(void);
 void turn_right_90(void);
+void turn_right_slow(void);
 void spin_right_slow(void);
 void find_track(void);
 void reverse(void);
@@ -109,6 +110,11 @@ void turn_left_slow(void)
 {
     set_motor_speed(left, stop, 5);
     set_motor_speed(right, slow, 8);
+}
+void turn_right_slow(void)
+{
+    set_motor_speed(left, slow, 8);
+    set_motor_speed(right, stop, 5);
 }
 void turn_left_90(void)
 {
