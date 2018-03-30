@@ -158,6 +158,7 @@ void cross_whitespace(void)
 		straight_fwd();
 	}	
 }
+// for each time adc value is taken
 void SetSensorsSetLed(void)
 {
   check_sensors(); 
@@ -189,8 +190,3 @@ void landing_pad(void)
             }    
      }
 }
-void SetSensorsSetLed(void)
-{
-  check_sensors(); 
-  set_leds();
-}//use this after each time you check
