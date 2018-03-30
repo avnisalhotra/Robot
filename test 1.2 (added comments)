@@ -3,202 +3,133 @@
 #include <xc.h>
 
 void follow_simple_curves(void);
-void follow_corners(void);
-void spin_left(void);// 
-void turn_left(void);//
-void straight_fwd(void);// this needs balancing
+void spin_left(void);
+void spin_left_slow(void);
+void turn_left(void);
+void turn_left_slow(void);
+void turn_left_90(void);
+void straight_fwd(void);
 void turn_right(void);
+void turn_right_90(void);
 void spin_right(void);
-void sharp_left(void);
-void sharp_right(void);
-void cross_whitespace(void); // this works 
-void spin_180(void); // this works 
-void sharp_angle_right(void);
-void sharp_angle_left(void);
-void follow_sharp_corners(void);
+void spin_right_slow(void);
+void find_track(void);
+void reverse(void);
+void landing_pad(void);
+void cross_whitespace(void);
+void SetSensorsSetLed(void);
+
 
 void motor_control(void)
-{	
-	// very simple motor control
-  	switch(SeeLine.B)
-   	{
-		//Simple Curves (Only one sensor is on)
-        // labeling sensors as follow 1,2,3,4,5 niven facing forward 
-		case 0b00100u: // sensor 3 is lit up 
-        case 0b00010u: // sensor 4 is lit up 
-        case 0b01000u: // sensor 2 is lit up 
-        case 0b00001u: // sensor 5 is lit up 
-        case 0b10000u: // sensor 1 is lit up 
-		case 0b01100u: // sensor 2 and 3 are lit up 
-		case 0b00110u: // sensor 3 and 4 are lit up 
-			//no breaks all above readings end up here
-            // this means it is traveling forward
-            // do we need to adjust so that it stays in the center 
-            follow_simple_curves();	//call function for simple curves
-       	break;
-
-		//Sharp turns (>90 deg)
-		case 0b11100: // sensor 1, 2, 3 are lit up 
-		case 0b00111: // sensor 3,4,5 are lit up 
-		case 0b11000: // sensor 1 and 2 are lit up 
-		case 0b00011: // sensor 4 and 5 are lit up 
-			//no breaks all above readings end up here
-			follow_corners();		//call function for corners
-		break;
-	
-		case 0b10100: //sensor 1 and 3 are lit up 
-		case 0b00101: // sensor 3 and 5 are lit up 
-			follow_sharp_corners();		//call function for corners
-		break;
-
-		//Case WHITESPACE (Crossing white or dead end)//no sensor is lit up 
-		case 0b00000u: // no sensor is lit up 
-			cross_whitespace();		//call function for crossing whitespace
-		break;
-
-		default:       break;
-  	} 
-
-	//***************************************************************
-	// ROBOT DANCES		    										*
-	//***************************************************************
-	//turn_left();		//Spin around one wheel
-
-	//spin_left();		//Spin at one place
-
-	//set_motor_speed(left, slow, 0); 
-  	//set_motor_speed(right, fast, 0);	//Spin in larger circles
-	//***************************************************************
-}
-
-//For following straight lines and slow curves
-void follow_simple_curves(void)
 {
-  	if ( SeeLine.b.Center ) straight_fwd();
-  	else if (SeeLine.b.Left) spin_left();
-   	else if (SeeLine.b.CntLeft) turn_left();
-  	else if (SeeLine.b.CntRight) turn_right();
-   	else if (SeeLine.b.CntLeft && SeeLine.b.Center) turn_left();
-  	else if (SeeLine.b.CntRight && SeeLine.b.Center) turn_right();
-	else if (SeeLine.b.Right) spin_right();
-}
-
-//For following turns of 90 degrees
-void follow_corners(void)
+    
+    //sets variables used in the for loops in the cases
+    int j = 0;
+    int i = 0;
+    
+    //sets timer used in the cases
+    OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_256);
+    
+    //switch function changes according to what the robot detects (in binary)
+    //SeeLine.B is the binary for what the robot detects.
+     switch(SeeLine.B)
+     {
+        //Case for when the robot detects center. On a track, this would 
+        //generally be a straight line, where the robot would execute the
+        //straight_fwd() function. 
+        case 0b00100u:
+        //This case is for when the robot is following a right curve, and also 
+        //for correcting itself when the robot starts veering off to the left
+        //when it is on a straight line.
+        case 0b00010u:    
+        //This case is also for when the robot is following a right curve.
+        case 0b00110u:      
+        //This case is for when the robot is following a left curve, and also 
+        //for correcting itself when the robot starts veering off to the right
+        //when it is on a straight line.
+        case 0b01000u:      
+        //This case is also for when the robot is following a left curve.    
+        case 0b01100u:
+        //This case is a last resort case where the robot is either veering off 
+        //too much to the left or simply following a right curve.
+        case 0b00001u:
+        //This case is a last resort case where the robot is either veering off 
+        //too much to the right or simply following a left curve.
+         case 0b10000u:
+                        follow_simple_curves();       //combined simple curves with new speeds from 2.0.
+                        break;                        
+ //NOTE: be aware what binary that simple curves now take, so later inputs should be different. 
+          
+void follow_simple_curves(void)        
 {
-	//Hitting perpendicular
-	if 		(SeeLine.b.Center && SeeLine.b.Left && SeeLine.b.CntLeft) sharp_left();
-	else if (SeeLine.b.Center && SeeLine.b.Right && SeeLine.b.CntRight) sharp_right();
-	//Hitting on a slight angle
-	else if (SeeLine.b.Left && SeeLine.b.CntLeft) sharp_left();				
-	else if (SeeLine.b.Right && SeeLine.b.CntRight) sharp_right();
+     if ( SeeLine.b.Center ) straight_fwd();
+     else if (SeeLine.b.Left) spin_left();
+     else if (SeeLine.b.CntLeft) spin_left_slow();
+     else if (SeeLine.b.CntRight) spin_right_slow();
+     else if (SeeLine.b.Right) spin_right();
+     else if (SeeLine.b.CntRight && SeeLine.b.Center) turn_right();
+     else if (SeeLine.b.CntLeft && SeeLine.b.Center) turn_left();
 }
 
-void follow_sharp_corners(void)
+//Below are all the certain robot directional functions which are called in
+//the case statements above. In each function, there are specific combinations
+//of parameters in set_motor_speed() which are unique to that function.
+
+void reverse(void)
 {
-	if 		(SeeLine.b.Center && SeeLine.b.Left) sharp_angle_left();
-	else if (SeeLine.b.Center && SeeLine.b.Right) sharp_angle_right();
-	else if (SeeLine.b.Center && SeeLine.b.CntLeft && SeeLine.b.Right) sharp_angle_right();
-	else if (SeeLine.b.Center && SeeLine.b.CntRight && SeeLine.b.Left) sharp_angle_left();
+  set_motor_speed(left, rev_slow, 5); 
+  set_motor_speed(right, rev_slow,8);    
 }
-
 void spin_left(void)
 {
-  	set_motor_speed(left, rev_fast, 0); 
-  	set_motor_speed(right, fast, 0); 
+  set_motor_speed(left, rev_medium, 5); 
+  set_motor_speed(right, medium, 8); 
 }
-
+void spin_left_slow(void)
+{
+  set_motor_speed(left, rev_slow, 5); 
+  set_motor_speed(right, slow, 8); 
+}
 void turn_left(void)
 {
-  	set_motor_speed(left, stop, 0); 
-  	set_motor_speed(right, fast, 0); 
+  set_motor_speed(left, slow, 5); 
+  set_motor_speed(right, medium, 8);  
+}
+void turn_left_slow(void)
+{
+    set_motor_speed(left, stop, 5);
+    set_motor_speed(right, slow, 8);
+}
+void turn_left_90(void)
+{
+  set_motor_speed(left, rev_slow, 5); 
+  set_motor_speed(right, slow, 8);  
 }
 void straight_fwd(void)
 {
-  	set_motor_speed(left, fast, 0); 
-  	set_motor_speed(right, fast, 0); 
+  set_motor_speed(left, slow, 5); 
+  set_motor_speed(right, slow, 8);     
 }
 void spin_right(void)
 {
-  	set_motor_speed(left, fast, 0); 
-  	set_motor_speed(right, rev_fast, 0); 
+  set_motor_speed(left, medium, 5); 
+  set_motor_speed(right, rev_medium, 8);  
+}
+void spin_right_slow(void)
+{
+   set_motor_speed(left, slow, 5); 
+   set_motor_speed(right, rev_slow, 8); 
 }
 void turn_right(void)
 {
-  	set_motor_speed(left, fast, 0); 
-  	set_motor_speed(right, stop, 0); 
+  set_motor_speed(left, medium, 5); 
+  set_motor_speed(right, slow, 8);  
 }
-void sharp_left(void)
+void turn_right_90(void)
 {
-  	spin_left();
-	//Check for line
-	check_sensors();    // from sumovore.c
-    set_leds();         // function from sumovore.c
-	
-	//While the robot has not completed the turn, keep spinning
-	while(SeeLine.b.Center != 1)
-	{
-		//Check for line
-		check_sensors();    // from sumovore.c
-        set_leds();         // function from sumovore.c
-	}
+  set_motor_speed(left, slow, 5); 
+  set_motor_speed(right, rev_slow, 8); 
 }
-void sharp_right(void)
-{
-	spin_right();
-	//Check for line
-	check_sensors();    // from sumovore.c
-    set_leds();         // function from sumovore.c
-
-	//While the robot has not completed the turn, keep spinning
-	while(SeeLine.b.Center != 1)
-	{
-		//Check for line
-		check_sensors();    // from sumovore.c
-        set_leds();         // function from sumovore.c
-	}
-}
-
-void sharp_angle_left(void)
-{
-	while(SeeLine.B != 0b00000  && SeeLine.B != 0b00101 && SeeLine.B != 0b00100)
-	{
-		straight_fwd();
-
-		//Check for line
-		check_sensors();    // from sumovore.c
-    	set_leds();         // function from sumovore.c
-	}
-	while(SeeLine.b.Center != 1)
-	{
-		spin_left();
-
-		//Check for line
-		check_sensors();    // from sumovore.c
-    	set_leds();         // function from sumovore.c
-	}
-}
-
-void sharp_angle_right(void)
-{
-	while(SeeLine.B != 0b00000 && SeeLine.B != 0b10100 && SeeLine.B != 0b00100)
-	{
-		straight_fwd();
-		//Check for line
-		check_sensors();    // from sumovore.c
-    	set_leds();         // function from sumovore.c
-	}
-	while(SeeLine.b.Center != 1)
-	{	
-		spin_right();
-
-		//Check for line
-		check_sensors();    // from sumovore.c
-    	set_leds();         // function from sumovore.c
-
-	}
-}
-
 void cross_whitespace(void)
 {
 	unsigned int wait_TCY = 31250;	//Amount of TCY to wait for timer0
@@ -227,14 +158,39 @@ void cross_whitespace(void)
 		straight_fwd();
 	}	
 }
-
-void spin_180(void)
+void SetSensorsSetLed(void)
 {
-  	spin_right();				
-	for(unsigned int i = 0; i < 43; i++)
-				_delay(100000ul);			 //Takes this amount of
-											//time for a full 180 spin		
-	motors_brake_all();						//Brake motors so robot stops
-											//spinning
+  check_sensors(); 
+  set_leds();
 }
- 
+
+void landing_pad(void)
+{
+    OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_256);
+    TMR0IF = 0;
+    
+    if(SeeLine.B == 0b11111u)
+     {
+            WriteTimer0(7724u);
+            while(!TMR0IF)
+            {
+                straight_fwd();
+                check_sensors(); 
+            } 
+            check_sensors();
+            if(SeeLine.B != 0b11111u) 
+            {
+                  reverse();
+                  if(SeeLine.B == 0b11111u)
+                  {
+                      motors_brake_all();
+                      check_sensors();
+                  }                 
+            }    
+     }
+}
+void SetSensorsSetLed(void)
+{
+  check_sensors(); 
+  set_leds();
+}//use this after each time you check
