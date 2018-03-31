@@ -1,0 +1,32 @@
+void landing_pad(void);
+
+case 0b11111u:
+              landing_pad();
+              break;
+
+
+void landing_pad(void)
+{
+    TMR0IF = 0;             //reset flag
+    WriteTimer0(0);         //start at 0
+    while (ReadTimer0() < 15625 && SeeLine.B == 0b11111u) //count for 0.5s and sees black
+    {
+        straight_fwd(); 
+        check_sensors();
+        SetSensorSetLed();
+        if(SeeLine.B == 0b00000u) //
+        {
+         reverse();
+         check_sensors();
+         SetSensorSetLed();
+         if(SeeLine.B == 0b11111u)
+          {
+            motors_brake_all();
+          }   
+        }
+        
+        
+        
+    }
+       
+}
