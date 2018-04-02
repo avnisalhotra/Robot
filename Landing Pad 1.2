@@ -1,0 +1,25 @@
+void landing_pad(void);
+
+case 0b11111u: 
+              landing_pad();
+              break;
+              
+              
+              
+void landing_pad(void)
+{
+    TMR0IF = 0;           
+    WriteTimer0(0);
+    while (ReadTimer0() < 17639 && SeeLine.B == 0b11111u) //give bot 0.56 sec to go straight while seeing black
+    {
+        straight_fwd(); 
+        CheckSensorsSetLed();
+    }
+   CheckSensorsSetLed();
+   if (ReadTimer0() > 17639 && SeeLine.B == 0b11111u)
+    {
+        motors_brake_all();
+        while(1);
+    } 
+}
+// i need to time the bot's speed again (with new bateries) to find a more accurate time it takes for it to get in the landing pad.
