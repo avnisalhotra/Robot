@@ -1,0 +1,31 @@
+//Tried to code a landing pad without using a timer in case we cant get the timer working correctly
+
+
+case 0b11111:
+landing_pad();
+break;
+
+void landing_pad(void)
+{
+while (SeeLine.B == 0b11111) // While still on landing pad
+{
+check_sensors();
+SetSensorsSetLed();
+straight_fwd();
+if (SeeLine.B == 0b00000) //After sensors are off landing pad
+{
+while (SeeLine.B != 0b11111) //While sensors not on landing pad
+rev_slow();
+check_sensors();
+SetSensorsSetLed();
+if (SeeLine.b == 11111) //Whem sensors see landing pad
+{
+rev_slow();
+_delay(100000) //added .0125s of delay to make sure robot is fully on landing pad
+while(1) //Infinite loop to hold the motor brake
+{
+motors_brake_all();
+}
+}
+}
+}
