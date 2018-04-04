@@ -1,0 +1,317 @@
+#include "sumovore.h"
+#include "motor_control.h"
+#include <xc.h>
+#define _XTAL_FREQ 32000000
+#define turn_tmr 31160u
+#define dead_end_tmr 28035u
+#define end_stop_tmr 53035u
+
+void follow_complex_paths(void);
+void follow_simple_curves(void);
+void end_stop(void);
+void ignore_turn(void);
+void dead_end(void);
+
+//LEFT
+void turn_left(void);
+void acute_left_turns (void);
+void straight_fwd(void);
+void spin_smooth_left(void);
+void spin_left (void);
+void turn_90_degrees_left(void);
+
+//RIGHT
+void turn_right(void);
+void acute_right_turns (void);
+void spin_one_place_right (void);
+void spin_right (void);
+void turn_90_degrees_right(void);
+
+//Reverse
+void reverse_medium(void);
+
+//EXTRA STUFF
+void wait_one_second (void);
+void WaitQuarterSecond(void);
+
+void spin_large_circle (void);
+
+int left_flag = 0;
+int right_flag = 0;
+
+
+
+void motor_control(void)
+{
+	//follow_simple_curves();
+	follow_complex_paths();
+}
+
+void follow_simple_curves(void)
+{
+     if ( SeeLine.b.Center ) straight_fwd();
+     else if (SeeLine.b.Left) spin_left();
+     else if (SeeLine.b.CntLeft) turn_left();
+     else if (SeeLine.b.CntRight) turn_right();
+     else if (SeeLine.b.Right) spin_right();
+
+}
+
+void follow_complex_paths(void)
+
+{
+	if (SeeLine.B == 0b00111u || SeeLine.B == 0b00101u || SeeLine.B == 0b01111u) turn_90_degrees_right();
+	else if (SeeLine.B == 0b11100u || SeeLine.B == 0b10100u || SeeLine.B == 0b11110u) turn_90_degrees_left();
+	else if (SeeLine.B == 0b10010u || SeeLine.B == 0b01001u || SeeLine.B == 0b10101u) ignore_turn();		//not working
+	else if (SeeLine.B == 0b00000u) dead_end();		
+	else if (SeeLine.B == 0b11111u) end_stop();
+	else if ( SeeLine.b.Center ) straight_fwd();
+    else if (SeeLine.b.Left) spin_left();
+    else if (SeeLine.b.CntLeft) turn_left();
+    else if (SeeLine.b.CntRight) turn_right();
+    else if (SeeLine.b.Right) spin_right();
+}
+
+	
+
+
+//LEFT
+void spin_smooth_left(void)		//right angle turn
+{
+	 set_motor_speed(left, rev_medium, 0); 
+     set_motor_speed(right, fast, 0); 
+}
+
+void turn_left(void)		//turn about left wheel
+{
+  set_motor_speed(left, stop, 0); 
+  set_motor_speed(right, fast, 0); 
+}
+
+void spin_left(void)	//spin about center
+{
+		set_motor_speed(right, fast, 10); 
+		set_motor_speed(left, rev_fast, 0); 
+}
+
+//FORWARD
+void straight_fwd(void)		//go straight forward
+{
+  set_motor_speed(left, fast, 0); 
+  set_motor_speed(right, fast, 3); 
+}
+
+//RIGHT
+void spin_smooth_right (void)	//right angle turn
+{
+	set_motor_speed(left, fast, 0); 
+    set_motor_speed(right, rev_medium, 0); 
+}
+	
+void turn_right(void)		//turn about right wheel
+{
+  set_motor_speed(left, fast, 0); 
+  set_motor_speed(right, stop, 0); 
+}
+
+void spin_right(void)		//spin about center
+{
+		set_motor_speed(left, fast, 10); 
+		set_motor_speed(right, rev_fast, 0); 
+}
+
+//REVERSE
+void reverse_medium(void)		//reverses straight back at medium speed
+{
+	set_motor_speed(left,rev_medium,0);
+	set_motor_speed(right,rev_medium,0);
+}
+
+
+//ACUTAL CODE
+
+
+void ignore_turn(void)	//work on this
+{
+	check_sensors();
+	set_leds();
+	while(SeeLine.B == 0b10010u)
+		{
+			while(SeeLine.B != 0b00100u)
+				{	
+					check_sensors();
+					set_leds();
+					turn_right();
+					check_sensors();
+					set_leds();
+				}
+
+			if (SeeLine.B == 0b00100u)return;
+		}
+
+	while(SeeLine.B == 0b01001u)
+		{
+			while(SeeLine.B != 0b00100u)
+				{	
+					check_sensors();
+					set_leds();
+					turn_left();
+					check_sensors();
+					set_leds();
+				}
+
+			if (SeeLine.B == 0b00100u)return;
+		}
+	while(SeeLine.B == 0b10101u)
+		{
+			while(SeeLine.B != 0b00100u)
+				{	
+					check_sensors();
+					set_leds();
+					motors_brake_all();
+					check_sensors();
+					set_leds();
+				}
+
+			if (SeeLine.B == 0b00100u)return;
+		}
+}
+
+void turn_90_degrees_left(void)
+{
+	OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_128);
+	TMR0IF = 0;
+	WriteTimer0(turn_tmr);
+	while(!SeeLine.B == 0b00000u)
+	{
+		
+		straight_fwd();
+		check_sensors();
+		set_leds();
+		if(TMR0IF == 1)return;
+	}
+	while(SeeLine.B != 0b00100u)
+	{	
+		check_sensors();
+		//spin_right();	//change direction if needed
+		spin_left();
+		check_sensors();
+	}
+
+	if (SeeLine.B == 0b01000u)return;
+}
+	
+void turn_90_degrees_right(void)
+{
+	OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_128);
+	TMR0IF = 0;
+	WriteTimer0(turn_tmr);			//0.5s = 34285 , 0.6s = 28035
+	while(!SeeLine.B == 0b00000u)
+	{
+		
+		straight_fwd();
+		check_sensors();
+		set_leds();
+		if(TMR0IF == 1)return;
+	}
+	while(SeeLine.B != 0b00100u)
+	{	
+		check_sensors();
+		spin_right();	//change direction if needed
+		//spin_left();
+		check_sensors();
+	}
+
+	if (SeeLine.B == 0b00010u)return;
+}
+
+void dead_end(void)
+{
+	OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_128);
+	TMR0IF = 0;
+	WriteTimer0(dead_end_tmr);
+	while (!TMR0IF)
+	{
+		check_sensors();
+		set_leds();
+		straight_fwd();
+		check_sensors();
+		set_leds();
+		if(SeeLine.B == 0b01000u || SeeLine.B == 0b00010u || SeeLine.B == 0b00100u || SeeLine.B == 0b00111u || SeeLine.B == 0b11100u)return;
+		
+	}
+
+	if(TMR0IF)
+	{
+		CloseTimer0();
+	
+		reverse_medium();
+		WaitQuarterSecond();
+		WaitQuarterSecond();
+	
+		while(SeeLine.B != 0b00100u)
+		{	
+			check_sensors();
+			set_leds();
+			//spin_right();	//change direction if needed
+			spin_left();
+			check_sensors();
+			set_leds();
+		}
+
+		if (SeeLine.B == 0b00100u)return;
+		
+	
+	}
+	
+	
+}
+void end_stop(void)
+{
+	OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_128);
+	TMR0IF = 0;
+	WriteTimer0(53035);
+	while (TMR0IF)
+	{
+		check_sensors();
+		set_leds();
+		straight_fwd();
+		check_sensors();
+		set_leds();
+		if(!SeeLine.B == 0b11111u)
+		return;
+	}
+
+	if(!TMR0IF)
+	{
+			check_sensors();
+			set_leds();
+			motors_brake_all();
+			check_sensors();
+			set_leds();
+	}	
+}
+
+//delays if we ever need them	
+void wait_one_second (void)
+{
+int  i = 0;
+for(i=0; i<=80; i++) 
+   {
+    _delay(100000ul);  // 100 000 * 4 / 32 000 000 = 1/80 s 
+	check_sensors();
+	set_leds();
+   }
+
+}
+
+void WaitQuarterSecond(void)
+{
+int  i = 0;
+for(i=0; i<=20; i++) 
+   {
+    _delay(100000ul);  // 100 000 * 4 / 32 000 000 = 1/80 s 
+	check_sensors();
+	set_leds();
+   }
+}
