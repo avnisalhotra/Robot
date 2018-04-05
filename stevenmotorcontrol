@@ -1,0 +1,534 @@
+#include "sumovore.h"
+#include "motor_control.h"
+#include <delays.h>
+#include <timers.h>
+void follow_simple_curves(void);	
+void left_slow(void);
+void left_medium(void);
+void left_fast(void);
+void right_slow(void);
+void right_medium(void);
+void right_fast(void);
+void spin_right(void);
+void spin_left(void);
+void corner90_left(void);
+void corner90_right(void);
+void cross_parking(void);
+void gap_end(void);						
+void straight_fwd(void);
+void straight_fwd_medium(void);
+void straight_fwd_slow(void);
+void small_angle_turn_left(void);
+void small_angle_turn_right(void);
+void identify_corner(void);
+void veer(void);
+void turn_180(void);
+void merge(void);
+char flag;
+char corner_flag =0;//this flag is used in small corner turn function
+char see_black=1;//this is used in cross parking
+
+void motor_control(void)
+{
+	
+	switch(SeeLine.B)
+    {
+		case 0b10000u:									/*	•บบบบ	*/
+		case 0b11000u:									/*	••บบบ	*/
+		case 0b01000u:									/*	บ•บบบ	*/
+		case 0b01100u:									/*	บ••บบ	*/
+		case 0b00110u:									/*	บบ••บ	*/
+		case 0b00010u:									/*	บบบ•บ	*/
+		case 0b00011u:									/*	บบบ••	*/
+		case 0b00001u:									/*	บบบบ•	*/
+					follow_simple_curves();break;						
+		case 0b00100u:									/*	บบ•บบ	*/
+		case 0b10101u:									/*	•บ•บ•	*/
+					straight_fwd_medium();break;
+		case 0b11100u:									/*	•••บบ	*/
+		case 0b11110u:									/*	••••บ	*/	
+					corner90_left();break;
+		case 0b00111u:									/*	บบ•••	*/    
+		case 0b01111u:									/*	บ••••	*/  
+					corner90_right();break;
+	    case 0b00000u:									/*	บบบบบ	*/
+					gap_end();break;
+		case 0b11111u:									/*	•••••	*/     
+					cross_parking();break;  
+		case 0b10100u:									/*	•บ•บบ	*/				
+		case 0b10010u:									/*	•บบ•บ	*/
+		case 0b00101u:									/*	บบ•บ•	*/
+		case 0b01001u:									/*	บ•บบ•	*/
+					identify_corner();break;
+        case 0b01101u:									/*	บ••บ•	*/
+        case 0b10110u:									/*	•บ••บ	*/        												
+					veer();break;
+        default:break;
+      } 
+}
+void follow_simple_curves(void)
+{
+    if (SeeLine.B == 0b10000u) spin_left();				/*	•บบบบ	*/
+    else if (SeeLine.B == 0b11000u) left_fast();		/*	••บบบ	*/
+	else if (SeeLine.B == 0b01000u) left_medium();		/*	บ•บบบ	*/
+    else if (SeeLine.B == 0b01100u) left_slow();		/*	บ••บบ	*/
+    else if (SeeLine.B == 0b00110u) right_slow();		/*	บบ••บ	*/
+    else if (SeeLine.B == 0b00010u) right_medium();		/*	บบบ•บ	*/
+    else if (SeeLine.B == 0b00011u) right_fast();		/*	บบบ••	*/
+    else if (SeeLine.B == 0b00001u) spin_right();		/*	บบบบ•	*/
+}
+void left_fast(void)									/*	••บบบ	*/
+{
+	set_motor_speed(left, stop, 0);
+	set_motor_speed(right, medium_fast, 0);
+}
+void left_medium(void)									/*	บ•บบบ	*/
+{
+  set_motor_speed(left, slow, 0); 
+  set_motor_speed(right, medium, 0); 
+}
+void left_slow(void)									/*	บ••บบ	*/
+{
+	set_motor_speed(left, slow, -23); 
+	set_motor_speed(right, medium_slow, 0); 
+}
+void right_fast(void)									/*	บบบ••	*/
+{
+	set_motor_speed(right, stop, 0);
+	set_motor_speed(left, medium_fast, -13);
+}
+void right_medium(void)									/*	บบบ•บ	*/
+{
+  set_motor_speed(left, medium, -5); 
+  set_motor_speed(right, slow, 0); 
+}
+void right_slow(void)									/*	บบ••บ	*/
+{
+	set_motor_speed(left, medium_slow, -125); 
+	set_motor_speed(right, slow, 0); 
+}
+void spin_left(void)									/*	•บบบบ	*/
+{
+	set_motor_speed(left, rev_slow, 0); 
+	set_motor_speed(right, slow, 0);
+}
+void spin_right(void)									/*	บบบบ•	*/
+{
+  set_motor_speed(left, slow, 0); 
+  set_motor_speed(right, rev_slow, 0); 
+}
+void straight_fwd(void)				
+{ 
+	set_motor_speed(left, medium, -31); 
+	set_motor_speed(right, medium, 0);
+}
+void straight_fwd_medium(void)			
+{ 
+	set_motor_speed(left, medium_slow, -105); 
+	set_motor_speed(right, medium_slow, 0);
+}
+void straight_fwd_slow(void)							/*	บบ•บบ	*/
+{														/*	บ•บ•บ	*/
+	set_motor_speed(left, slow, -20);					/*	•บบบ•	*/
+	set_motor_speed(right, slow, 20);					/*	•บบ•บ	*/
+}														/*	บ•บบ•	*/
+void corner90_left(void)				//finish				/*	•••บบ	*/			
+{														/*	••••บ	*/
+	straight_fwd_medium();
+	INTCONbits.TMR0IF=0;
+	WriteTimer0(61793);//the time for 2cm at medium speed 0.167
+	while(!INTCONbits.TMR0IF)
+	{
+		check_sensors();
+		set_leds(); 
+		if(SeeLine.B==0b11111u)
+		{	
+			cross_parking();
+		}
+		else if (SeeLine.B==0b00000u)	
+		{
+			straight_fwd_medium();
+			INTCONbits.TMR0IF=0;
+		    WriteTimer0(64900);//4.2cm at 0.167
+			while(!INTCONbits.TMR0IF);
+			motors_brake_all();
+			while(1)
+			{
+				set_motor_speed(left, rev_slow, 0); 
+				set_motor_speed(right, slow, 0); 
+				check_sensors(); 
+				set_leds();    // from sumovore.c
+				if(SeeLine.b.Center ==1)
+				{
+					straight_fwd_medium();
+					break;
+				}
+			}
+		}
+	} 
+}//finish
+void corner90_right(void)	//finish							/*	บบ•••	*/ 				
+{														/*	บ••••	*/ 
+	straight_fwd_medium();
+	INTCONbits.TMR0IF=0;
+	WriteTimer0(61793);//the time for 2cm at medium speed 0.167
+	while(!INTCONbits.TMR0IF)
+	{
+	check_sensors();
+	set_leds(); 
+	if(SeeLine.B==0b11111u)
+		{	
+			cross_parking();
+		}	
+	else if (SeeLine.B==0b00000u)
+	{
+		straight_fwd_medium();
+		INTCONbits.TMR0IF=0;
+	    WriteTimer0(64900);//4.2cm at 0.187
+		while(!INTCONbits.TMR0IF);
+		motors_brake_all();
+		while(1)
+		{
+			set_motor_speed(right, rev_slow, 0); 
+			set_motor_speed(left, slow, 0); 
+			check_sensors(); 
+			set_leds();    // from sumovore.c
+			if(SeeLine.b.Center==1)
+			{
+				straight_fwd_slow();
+				break;
+			}
+		}
+	} 
+	}
+}					
+void small_angle_turn_left(void)	
+{	//This funtion is called by identify_corner() to complete a 30 degree turn
+	while(corner_flag==0)
+	{
+		straight_fwd_medium();	
+		check_sensors();
+		set_leds();
+		if(SeeLine.B == 0b00000u)
+		{
+			//4.5cm at 0.167
+			straight_fwd_medium();
+			INTCONbits.TMR0IF=0;
+			WriteTimer0(64800);//4.5cm at 0.167 0b00000
+			while(!INTCONbits.TMR0IF);
+			
+			  motors_brake_all();
+			
+			while( SeeLine.b.Center != 1)
+			{
+				set_motor_speed(right, slow, 0);
+				set_motor_speed(left, rev_medium_slow, 0);
+				check_sensors();
+				set_leds();
+			}
+			motors_brake_all();
+			corner_flag =1;
+
+		}
+		else if((SeeLine.B==0b00111u)||(SeeLine.B==0b00101u))
+		{
+			straight_fwd_medium();
+			INTCONbits.TMR0IF=0;
+			//WriteTimer0(60090);//5 to 7 go straight 
+			WriteTimer0(65000);
+			while(!INTCONbits.TMR0IF);
+			{
+				corner_flag =1;
+			} 
+		}
+		else if ((SeeLine.B==0b01101u)||(SeeLine.B==0b01001u)||(SeeLine.B==0b10110)||(SeeLine.B==0b10010u))
+		{
+			veer();break;
+		}
+	}
+	corner_flag=0;
+}	
+void small_angle_turn_right(void)			//	บบ•บ?//
+{
+	while(corner_flag==0)
+	{
+		straight_fwd_medium();	
+		check_sensors();
+		set_leds();
+		if(SeeLine.B == 0b00000u)
+		{
+			//4.5cm at 0.167
+			straight_fwd_medium();
+			INTCONbits.TMR0IF=0;
+			WriteTimer0(64800);//4.5cm at 0.167 0b00000
+			while(!INTCONbits.TMR0IF);
+			{
+				motors_brake_all();
+			}			
+			while( SeeLine.b.Center != 1)
+			{
+				set_motor_speed(right, rev_medium_slow, 0);
+				set_motor_speed(left, slow, 0);
+				check_sensors();
+				set_leds();
+			}
+			motors_brake_all();
+			corner_flag=1;
+			
+		}
+		else if ((SeeLine.B==0b11100u)||(SeeLine.B==0b10100u))
+		{
+			straight_fwd_medium();
+			INTCONbits.TMR0IF=0;
+			WriteTimer0(65000);//5 to 7 go straight
+			while(!INTCONbits.TMR0IF);
+			corner_flag=1;		  
+		}	
+		else if ((SeeLine.B==0b01101u)||(SeeLine.B==0b01001u)||(SeeLine.B==0b10110)||(SeeLine.B==0b10010u))
+		{
+			veer();break;
+		}		
+	}
+	corner_flag=0;
+}
+void cross_parking(void)//finish
+{	  
+	straight_fwd_medium();	 
+	INTCONbits.TMR0IF=0;
+	WriteTimer0(54308);//the time for 6cm at medium 0.167 speed
+	while(!INTCONbits.TMR0IF)
+	{
+		check_sensors();
+		set_leds();
+		if (SeeLine.B!=0b11111u)
+		{	see_black=0;
+		}
+	}//end of timer
+	if(INTCONbits.TMR0IF && (SeeLine.B == 0b11111u)&&(see_black==1))
+	{	
+		while(1)
+		{motors_brake_all();}
+	}
+	else if(see_black==0)
+	{
+		see_black=1;
+	}
+}//finish
+void gap_end(void)	//finish									/*	บบบบบ	*/
+{	
+	//This function is called when the robot encounters a break in the line
+	//If robot finds another line before time runs up, then robot will follow that line 
+	//If robot does not find a line before the time runs up, the it will turn around and look for the original line
+	//Timer is used to allow a slight delay before turn_180 funtion is called 
+	INTCONbits.TMR0IF=0;
+	WriteTimer0(49000);//8cm at 0.167
+	//Robot will look go striaght to check for other lines before timer is up and turn_180 function is called 
+	while (!INTCONbits.TMR0IF) 
+	{
+		straight_fwd_medium();
+		check_sensors();
+	    set_leds();
+		//If sensor senses •บบบบ or บบบบ• before time is up, then robot will call merge function 
+		//After merge function runs, the break; will take the robot back to while(1) in main
+		
+		if((SeeLine.B == 0b10000u) || (SeeLine.B == 0b00001u))			/*	•บบบบ	*/
+		{												/*	บบบบ•	*/
+			merge(); flag = 0; break;
+		}
+		//If sensor sees any case other than บบบบบ before time is up, then the following code will direct the robot
+		//After any of the following function is called, the break; will take the robot back to while(1) in main
+	    else if(SeeLine.B==0b00100u)					/*	บบ•บบ	*/
+        {
+			straight_fwd_slow(); flag = 0; break;
+		}
+	    else if ((SeeLine.B == 0b11100u) || (SeeLine.B == 0b11110u) || (SeeLine.B == 0b11000u) )	/*	•••บบ	*/
+		{												/*	••••บ	*/
+			corner90_left(); flag = 0; break;
+		}
+	    else if ((SeeLine.B == 0b00111u) || (SeeLine.B == 0b01111u) || (SeeLine.B == 0b00011u))	/*	บบ•••	*/
+		{												/*	บ••••	*/
+			corner90_right(); flag = 0; break;
+		}
+		else if 
+		   ((SeeLine.B == 0b11000u) || (SeeLine.B == 0b01000u) || (SeeLine.B == 0b01100u) || (SeeLine.B == 0b00110u) || (SeeLine.B == 0b00010u) ||	(SeeLine.B ==0b00011u))									/*	บบบ••	*/
+		{				
+			follow_simple_curves(); flag = 0; break;
+		}
+	    else if ((SeeLine.B == 0b10100u) || (SeeLine.B ==0b00101u))	/*	•บ•บบ	*/
+		{												/*	บบ•บ•	*/
+			identify_corner(); flag = 0; break;
+		}
+		else if (SeeLine.B==0b11111u)
+		{
+			cross_parking();
+			flag=0;
+			break;
+		}
+		//The following code will run, if none of the above is called, to call turn_180 by raising a flag 
+
+	}//end of timer
+	if (SeeLine.B==0b00000u)
+	{
+		flag=1;
+	
+	//If timer is up and none of the above cases were called, turn_180 is called to go back and find the original line
+	//The following if statement will not run if any of the above cases run because they all have break; (goes back to while (1) in main)
+		turn_180();
+	}
+}
+void veer(void)  
+{	//This function is called by identify_corner() or motor_control() function when the robot encounters a nearby track on an angle (not straight)
+	//slight left
+	if ((SeeLine.B == 0b01101u) ||(SeeLine.B == 0b01001u))			
+	{													/*	บ•บบ•	*/
+		motors_brake_left();							/*	บ••บ•	*/
+		set_motor_speed(right, medium, 0);
+	}
+	//slight right
+	else if ((SeeLine.B == 0b10110u) || (SeeLine.B==0b10010u))		
+	{													/*	•บบ•บ	*/
+		motors_brake_right();							/*	•บ••บ	*/
+		set_motor_speed(left, medium, -23); 
+	}
+}
+void turn_180(void)
+{	//This function is called by gap_end when robot needs to return to original line
+	
+	//Timer is used to tell robot how long (time) to back-travel, timer value must allow robot to find original line
+	
+		set_motor_speed(left, medium, 0); 
+		set_motor_speed(right, rev_medium, 0); 
+		INTCONbits.TMR0IF=0;
+		WriteTimer0(44400);//add a delay to turn 180 degree approximately so that it can see 0b00000
+		while(!INTCONbits.TMR0IF);
+		motors_brake_all();
+		while(SeeLine.B==0b00000u)
+		{
+		straight_fwd_medium();
+		check_sensors();
+	    set_leds();
+		}
+		
+		//Robot should keep going back until the sensor sees a case other than บบบบบ
+
+			
+}
+void merge(void)
+{	//This function is called by gap_end if sensor sees •บบบบ or บบบบ• before timer is up
+	//Thi funtion will prevent motor_control() from turning in the wrong direction by allowing robot to travel to บบ•บบ
+	//When the sensor sees บบ•บบ, motor_control() will take over
+	while (SeeLine.B != (0b00100u))
+	{
+		straight_fwd_slow();
+		check_sensors();
+	    set_leds();
+	}
+}
+void identify_corner(void)					
+{	
+	check_sensors();
+	set_leds();
+	straight_fwd_medium();
+	while(1)
+	{
+		//While timer is not up sensors are checked and then LEDS are set
+		straight_fwd_medium();
+		check_sensors();
+	    set_leds();
+
+		//If •••บบ or ••••บ
+		if ((SeeLine.B == 0b11100u) || (SeeLine.B == 0b11110u))		/*	•••บบ	*/
+		{															/*	••••บ	*/
+			while ((SeeLine.B!=0b00000u)&&(SeeLine.B!=0b01100u)) //case 3
+			{
+				check_sensors();
+				set_leds(); 
+				if(SeeLine.B==0b00000u)//90 left
+				{
+					straight_fwd_medium();
+					INTCONbits.TMR0IF=0;
+					WriteTimer0(63000);//4.2cm at 0.167
+					while(!INTCONbits.TMR0IF);
+					{
+						motors_brake_all();
+					}
+					while(SeeLine.b.Center !=1)
+					{
+						set_motor_speed(left, rev_medium_slow, 0); 
+						set_motor_speed(right, medium, 0); 
+						check_sensors();
+						set_leds(); 
+					}
+					break;
+				}			
+				else if((SeeLine.B==0b01100u)||(SeeLine.B==0b00110u)||(SeeLine.B==0b11000u))//30
+				{
+					small_angle_turn_left();
+					break;
+				}
+
+			}
+			if((SeeLine.B==0b01100u)||(SeeLine.B==0b00110u)||(SeeLine.B==0b11000u))
+			{
+				small_angle_turn_left();
+			}
+		}	
+		else if ((SeeLine.B == 0b00111u) || (SeeLine.B == 0b01111u))		/*	บบ•••	*/
+		{																	/*	บ••••	*/
+			while ((SeeLine.B!=0b00000u)&&(SeeLine.B!=0b00110u))
+			{
+				check_sensors();
+				set_leds(); 
+				if(SeeLine.B==0b00000u)//turn right
+				{
+					straight_fwd_medium();
+					INTCONbits.TMR0IF=0;
+					WriteTimer0(63000);//4.2cm 0.167
+					while(!INTCONbits.TMR0IF)
+					{
+						motors_brake_all();
+					}
+					while(SeeLine.b.Center !=1)
+					{
+						set_motor_speed(right, rev_medium_slow, 0); 
+						set_motor_speed(left, medium, 0); 
+						check_sensors();
+						set_leds(); 
+					}
+					break;
+				}
+				else if((SeeLine.B==0b00110u)||(SeeLine.B==0b01100u)||(SeeLine.B==0b00011u))
+				{
+					small_angle_turn_right();
+					break;
+				}
+			}
+			if((SeeLine.B==0b00110u)||(SeeLine.B==0b01100u)||(SeeLine.B==0b00011u))
+			{
+				small_angle_turn_right();
+			}
+		}
+		else if (SeeLine.B==0b11111u)					/*	•••••	*/
+		{
+			cross_parking();break;
+		}	
+		else if ((SeeLine.B==0b01100u)||(SeeLine.B==0b11000u))				/*	บ••บบ	*/
+		{
+			small_angle_turn_left();break;
+		}
+		else if ((SeeLine.B==0b00110u)||(SeeLine.B==0b00011u))				/*	บบ••บ	*/
+		{
+			small_angle_turn_right();break;
+		}
+		else if ((SeeLine.B == 0b10100u) || (SeeLine.B == 0b00101u) || (SeeLine.B == 0b01100u) || (SeeLine.B == 0b00110u)||(SeeLine.B ==0b00100u)||(SeeLine.B ==0b00100u)||(SeeLine.B==0b10101u))				/*	•บ•บบ	*/
+		{													/*	บบ•บ•	*/
+			straight_fwd_medium();break;
+		}
+		else if ((SeeLine.B == 0b01101u) || (SeeLine.B == 0b10110u) || (SeeLine.B == 0b10010u))														
+		{													/*	•บ••บ	*/
+			veer();break;									/*	บ••บ•	*/
+															/*	บ•บบ•	*/
+		}													/*	•บบ•บ	*/
+
+	}	
+}
