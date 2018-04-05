@@ -1,0 +1,42 @@
+case 0b01001u:
+            
+            _delay(100000ul);
+            _delay(100000ul);
+            
+
+               
+            
+            for(i=0; i<=320; i++) 
+            {
+               straight_fwd();
+               _delay(25000ul);  
+               check_sensors();
+                 
+               
+               if (SeeLine.B == 0b00000u || SeeLine.b.Left)
+               {
+                  i = 320; check_sensors();
+               }
+             }
+             
+            check_sensors();
+            
+            
+            if (SeeLine.B == 0b00000u)
+            {
+                j = 0;
+                 
+                for(j=0; j<=160; j++) 
+                {   
+                    spin_right();
+                    _delay(25000ul);  
+                    check_sensors();
+                    
+                    if (SeeLine.b.Center)
+                    {
+                      j = 160; check_sensors();
+                    }
+                }  
+            }
+
+            break;
